@@ -1,0 +1,49 @@
+applications:
+    upsun_django:
+
+        type: "python:3.11"
+
+        source:
+            root: "my_awesome_project"
+
+        relationships:
+            postgresql: "postgresql:postgresql"
+            redis: "redis:redis"
+          
+        web:
+            commands:
+                start: "echo 'Put your web server command in here! You need to listen to \"$UNIX\" unix socket. Read more about it here: /create-apps/app-reference.html#web-commands'; sleep 60"
+            upstream:
+                socket_family: unix
+            locations:
+                "/":
+                    passthru: true
+              
+        build:
+            flavor: none
+
+        hooks:
+            build: |
+                set -eux
+                
+                # Add build steps here.
+                # echo 'I am a build step'
+
+            deploy: |
+                set -eux
+                # echo 'Put your deploy command here'
+
+services:
+    postgresql:
+        type: postgresql:15
+    redis:
+      type: redis:7.0
+
+routes:
+    "https://{default}/":
+        type: upstream
+        upstream: "upsun_django:http"
+
+    "https://www.{default}":
+        type: redirect
+        to: "https://{default}/"
