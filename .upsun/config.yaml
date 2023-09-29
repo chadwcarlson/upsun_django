@@ -36,7 +36,7 @@ applications:
                 python -m pip install --upgrade pip
                 
                 # Install dependencies
-                pip install -r requirements.txt
+                pip install -r requirements/production.txt
 
                 # Collect static assets
                 python manage.py collectstatic
