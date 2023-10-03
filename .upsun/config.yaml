@@ -1,0 +1,62 @@
+applications:
+    upsun_django:
+
+        type: "python:3.11"
+
+        # source:
+        #     root: "my_awesome_project"
+
+        relationships:
+            postgresql: "postgresql:postgresql"
+            redis: "redis:redis"
+          
+        web:
+            commands:
+                start: "gunicorn -w 4 -b unix:$SOCKET my_awesome_project.wsgi:application"
+
+            upstream:
+                socket_family: unix
+
+            locations:
+                "/":
+                    passthru: true
+                "/static":
+                    root: "static"
+                    expires: 1h
+                    allow: true
+              
+        build:
+            flavor: none
+
+        hooks:
+            build: |
+                set -eux
+
+                # Upgrade pip
+                python -m pip install --upgrade pip
+                
+                # Install dependencies
+                pip install -r requirements/local.txt
+                pip install -r requirements/production.txt
+
+                # Collect static assets
+                python manage.py collectstatic
+
+            deploy: |
+                set -eux
+                python manage.py migrate
+
+services:
+    postgresql:
+        type: postgresql:15
+    redis:
+      type: redis:7.0
+
+routes:
+    "https://{default}/":
+        type: upstream
+        upstream: "upsun_django:http"
+
+    "https://www.{default}":
+        type: redirect
+        to: "https://{default}/"
